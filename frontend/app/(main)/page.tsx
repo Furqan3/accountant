@@ -1,10 +1,23 @@
+'use client';
 import Header from "@/components/layout/header"
+import { useSession } from "next-auth/react"
+import  {useRouter}  from "next/navigation"
 import Footer from "@/components/layout/footer"
 import TestimonialCarousel from "@/components/home/testimonial-carousel"
 import { FaArrowRight } from "react-icons/fa"
 import { SquareCheckBig } from 'lucide-react'
 
 export default function Home() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+const handleRedirect = () => {
+    if (status === "unauthenticated") {
+      router.push("/signup")
+    }
+    else {
+      router.push("/company-search")
+    }
+  }
   return (
     <>
       {/* HERO / COMPONENT */}
@@ -276,10 +289,17 @@ export default function Home() {
                 <p className="text-4xl font-bold text-gray-900 text-center mb-10">
                   $99 <span className="text-lg font-normal text-gray-600">USD/month</span>
                 </p>
+               
+                  <button 
+                  onClick={handleRedirect}
+                   className="bg-teal-800 hover:bg-teal-900 text-white font-medium py-3 px-8 rounded-lg mb-10
+             transition-all duration-300 ease-in-out
+             hover:shadow-[0_8px_25px_rgba(13,148,136,0.5)]"
+>
+                    Get Started
 
-                <button className="bg-teal-800 hover:bg-teal-900 text-white font-medium py-3 px-8 rounded-lg mb-10">
-                  Get Started
-                </button>
+                  </button>
+               
 
                 <div className="space-y-3">
                   <h4 className="font-semibold text-gray-900">Services Included:</h4>
@@ -320,7 +340,12 @@ export default function Home() {
                   $199 <span className="text-lg font-normal opacity-90">USD/month</span>
                 </p>
 
-                <button className="bg-white hover:bg-gray-100 text-teal-700 font-medium py-3 px-8 rounded-lg mb-10">
+                <button
+                onClick={handleRedirect}
+                className="bg-white hover:bg-gray-100 text-teal-700 font-medium py-3 px-8 rounded-lg mb-10
+             transition-all duration-300 ease-in-out
+             hover:shadow-[0_8px_25px_rgba(256,256,256,0.5)]"
+>
                   Get Started
                 </button>
 
@@ -368,7 +393,12 @@ export default function Home() {
                   $299 <span className="text-lg font-normal text-gray-600">USD/month</span>
                 </p>
 
-                <button className="bg-teal-800 hover:bg-teal-900 text-white font-medium py-3 px-8 rounded-lg mb-10">
+                <button 
+                onClick={handleRedirect}
+               className="bg-teal-800 hover:bg-teal-900 text-white font-medium py-3 px-8 rounded-lg mb-10
+             transition-all duration-300 ease-in-out
+             hover:shadow-[0_8px_25px_rgba(13,148,136,0.5)]"
+>
                   Get Started
                 </button>
 
@@ -406,9 +436,15 @@ export default function Home() {
                 Get professional help with your company filings
               </h2>
 
-              <button className="mt-10 bg-white hover:bg-gray-100 text-teal-700 font-semibold py-4 px-10 rounded-full text-lg transition">
-                Get Started
-              </button>
+             <button
+  onClick={handleRedirect}
+  className="mt-10 bg-white  hover:text-black text-teal-700 font-semibold py-4 px-10 
+             rounded-full text-lg transition-all duration-300 ease-in-out
+             hover:shadow-lg hover:scale-105"
+>
+  Get Started
+</button>
+
             </div>
 
             {/* Right: Man with tablet */}

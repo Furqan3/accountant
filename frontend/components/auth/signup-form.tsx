@@ -1,11 +1,15 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useRef } from "react"
 import Link from "next/link"
-import { Eye, EyeOff, Mail, Lock, User, Building2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { signIn } from "next-auth/react"
+import { Eye, EyeOff, Mail, Lock, User, Building2, Upload, X } from "lucide-react"
 
 export default function SignUpForm() {
+  const router = useRouter()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
     fullName: "",
@@ -13,18 +17,87 @@ export default function SignUpForm() {
     email: "",
     password: "",
   })
+  const [profilePic, setProfilePic] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
+    setError("")
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Image size should be less than 5MB")
+        return
+      }
+      setProfilePic(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+      setError("")
+    }
+  }
+
+  const removeProfilePic = () => {
+    setProfilePic(null)
+    setPreviewUrl(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError("")
+    setSuccess("")
     setIsLoading(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setIsLoading(false)
+
+    try {
+      const formDataToSend = new FormData()
+      formDataToSend.append("fullName", formData.fullName)
+      formDataToSend.append("companyName", formData.companyName)
+      formDataToSend.append("email", formData.email)
+      formDataToSend.append("password", formData.password)
+      if (profilePic) {
+        formDataToSend.append("profilePic", profilePic)
+      }
+
+      const response = await fetch("/api/signup.ts", {
+        method: "POST",
+        body: formDataToSend,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Something went wrong")
+      }
+
+      setSuccess("Account created successfully! Redirecting to sign in...")
+
+      setTimeout(() => {
+        router.push("/signin")
+      }, 2000)
+    } catch (err: any) {
+      setError(err.message || "Failed to create account")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signIn("google", { callbackUrl: "/" })
+    } catch (err) {
+      setError("Failed to sign in with Google")
+    }
   }
 
   return (
@@ -35,6 +108,65 @@ export default function SignUpForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Success Message */}
+        {success && (
+          <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg text-sm">
+            {success}
+          </div>
+        )}
+
+        {/* Profile Picture Upload */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Profile Picture (Optional)</label>
+          <div className="flex items-center gap-4">
+            {previewUrl ? (
+              <div className="relative">
+                <img
+                  src={previewUrl}
+                  alt="Profile preview"
+                  className="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
+                />
+                <button
+                  type="button"
+                  onClick={removeProfilePic}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
+                <User className="w-8 h-8 text-gray-400" />
+              </div>
+            )}
+            <div className="flex-1">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+                id="profilePic"
+              />
+              <label
+                htmlFor="profilePic"
+                className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+              >
+                <Upload className="w-4 h-4" />
+                Choose Image
+              </label>
+              <p className="text-xs text-gray-500 mt-1">Max 5MB (JPG, PNG, GIF)</p>
+            </div>
+          </div>
+        </div>
+
         {/* Full Name Field */}
         <div>
           <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
@@ -168,6 +300,7 @@ export default function SignUpForm() {
         <div className="grid grid-cols-2 gap-4">
           <button
             type="button"
+            onClick={handleGoogleSignIn}
             className="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
